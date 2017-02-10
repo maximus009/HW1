@@ -83,8 +83,8 @@ def getBinaryClassifierWeights(X_train, Y_train, c=0.1):
 
 if __name__ == "__main__":
     (X_train, Y_train, X_test, Y_test) =  getData()
-    ## Here using one-vs-all algorithm predicts the labels for X_test
-    ## You just need to implemet the genaral rules. For each binary classifiers use "getBinaryClassifierWeights" method.
+    ## Here using one-vs-all algorithm predict the labels for X_test
+    ## You just need to implement the logic of one-vs-all. For each binary classifiers use "getBinaryClassifierWeights" method.
     ## Cross validate on the training set to find out the value of c (parameter for binary classifiers) that generates the best score and then with this c, test on X-test and recoed the accuracy
     ## accuacy can be calculated by "accuracy_score(Y_test, predict_Y)"
 
