@@ -87,10 +87,7 @@ if __name__ == "__main__":
     ## You just need to implemet the genaral rules. For each binary classifiers use "getBinaryClassifierWeights" method.
     ## Cross validate on the training set to find out the value of c (parameter for binary classifiers) that generates the best score and then with this c, test on X-test and recoed the accuracy
     ## accuacy can be calculated by "accuracy_score(Y_test, predict_Y)"
-    all_class = np.unique(Y_train)
-    W = [getBinaryClassifierWeights(X_train, [1 if y==class_ else 0 for y in Y_train], c = 0.00001) for class_ in all_class]
-    predict_Y = [all_class[np.argmax([np.dot(w, x_test) for  w in W])] for x_test in X_test]
-    print(accuracy_score(Y_test, predict_Y))
+
 
 
 
