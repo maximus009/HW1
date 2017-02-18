@@ -1,6 +1,5 @@
 import os
 import struct
-import math
 import numpy as np
 from scipy.sparse import rand
 
@@ -55,7 +54,7 @@ def computeObjectiveValue(weight, C, xTrain, yTrain):
     total_part_2 = 0
     for i in range(len(xTrain)):
         predicted_y = -1
-        max_y_hat = -math.inf
+        max_y_hat = -np.inf
         for j in y_labels:
             y_hat = np.dot(weight[j].T, xTrain[i])
             if j != yTrain[i]:
@@ -79,7 +78,7 @@ def trainSVM(xTrain, yTrain, C=1, numEpoch=100):
         loss = 0
         for i in range(len(xTrain)):
             predicted_y = -1
-            max_y_hat = -math.inf
+            max_y_hat = -np.inf
             for j in y_labels:
                 y_hat = weight[j].dot(xTrain[i])
                 if j != yTrain[i]:  # mismatch
@@ -91,11 +90,11 @@ def trainSVM(xTrain, yTrain, C=1, numEpoch=100):
             if predicted_y != yTrain[i]:
                 loss += 1
             # update weight
-			#  =========================================
+            #  =========================================
             # You need to implement the update rules here
-			#  =========================================
+            #  =========================================
 
-       print('%d\t%f\t%f' % (epoch, ((loss / len(xTrain)) * 100), computeObjectiveValue(weight, C, xTrain, yTrain)))
+    print('%d\t%f\t%f' % (epoch, ((loss / len(xTrain)) * 100), computeObjectiveValue(weight, C, xTrain, yTrain)))
 
     return weight
 
@@ -105,17 +104,18 @@ def testSVM(xTest, yTest, weight, y_labels):
     accurate = 0
     for i in range(len(xTest)):
         predicted_y = -1
-        max_y_hat = -math.inf
+        max_y_hat = -np.inf
         for j in y_labels:
             y_hat = weight[j].dot(xTest[i])
             if max_y_hat < y_hat:
                 max_y_hat = y_hat
                 predicted_y = y_labels[j]
-
         if predicted_y == yTest[i]:
-            accurate += 1
+            accurate += 1.0
 
-    print('Accuracy: ', (accurate / len(xTest)) * 100)
+    print('Accuracy: ', (accurate / float(len(xTest))) * 100.0)
+
+
 def toLiblinear(data, label, fileName):
     fp = open(fileName,'w')
     feature_size = data.shape[1]
@@ -137,7 +137,3 @@ if __name__ == '__main__':
     #  =============================================================
     weight = trainSVM(xTrain, yTrain, 1, 100)
     testSVM(xTest, yTest, weight, np.unique(yTrain))
-
-
-
-

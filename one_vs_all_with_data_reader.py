@@ -3,7 +3,9 @@ import struct
 import numpy as np
 from sklearn import svm
 from sklearn.metrics import accuracy_score
-from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.model_selection import StratifiedKFold
+from multiclass_svm import testSVM
 
 """
 Loosely inspired by http://abel.ee.ucla.edu/cvxopt/_downloads/mnist.py
@@ -70,7 +72,6 @@ def parseData(dataSet):
 def getData():
     (X_train, Y_train) = parseData("training")
     (X_test, Y_test) = parseData("testing")
-    #print('returning data')
     return (X_train, Y_train, X_test, Y_test)
 
 
@@ -78,28 +79,43 @@ def getBinaryClassifierWeights(X_train, Y_train, c=0.1):
     assert len(np.unique(Y_train)) == 2, "binary classifier can't do multiclassification"
     clf = svm.LinearSVC(C=c)
     clf.fit(X_train, Y_train)
-    #print("returning classifier weights")
-    return clf.coef_
+    return clf.coef_[0]
+
+def one_vs_rest_classifier(X_train, Y_train):
+
+    labels = np.unique(Y_train)
+    C_values = [0.01, 0.1, 1.0, 10]
+
+    for c in C_values:
+
+        print('For the c value of:', c)
+        for trainIndex, testIndex in StratifiedKFold(random_state=0).split(X_train, Y_train):
+            xTrain = X_train[trainIndex]
+            xTest = X_train[testIndex]
+            yTrain = Y_train[trainIndex]
+            yTest = Y_train[testIndex]
+
+            print('For new fold')
+
+            weights = np.zeros((len(labels),784))
+            for k in labels:
+                print('Calculating weights for',k)
+                x_k_train, x_rest_train = xTrain[yTrain==k], xTrain[yTrain!=k]
+                x = np.vstack((x_k_train,x_rest_train))
+                y = 2*np.array(map(int, yTrain==k), dtype=int) - 1 
+                #all labels are -1 or 1
+                print x.shape,y.shape
+                weights[k,:] = getBinaryClassifierWeights(x,y,c)
+
+            testSVM(xTest, yTest, weights, labels)
+            break
+
 
 if __name__ == "__main__":
-    (X_train, Y_train, X_test, Y_test) =  getData()
     ## Here using one-vs-all algorithm predict the labels for X_test
     ## You just need to implement the logic of one-vs-all. For each binary classifiers use "getBinaryClassifierWeights" method.
     ## Cross validate on the training set to find out the value of c (parameter for binary classifiers) that generates the best score and then with this c, test on X-test and recoed the accuracy
     ## accuacy can be calculated by "accuracy_score(Y_test, predict_Y)"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    (X_train, Y_train, X_test, Y_test) =  getData()
+    one_vs_rest_classifier(X_train, Y_train)
