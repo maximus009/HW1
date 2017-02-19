@@ -81,36 +81,43 @@ def getBinaryClassifierWeights(X_train, Y_train, c=0.1):
     clf.fit(X_train, Y_train)
     return clf.coef_[0]
 
-def one_vs_rest_classifier(X_train, Y_train):
+def one_vs_rest_classifier(X_train, Y_train, X_test, Y_test):
 
     labels = np.unique(Y_train)
     C_values = [0.01, 0.1, 1.0, 10]
-
+    bestAccuracy, bestC = 0.0, 0
     for c in C_values:
-
         print('For the c value of:', c)
+        accuracy = 0.0
         for trainIndex, testIndex in StratifiedKFold(random_state=0).split(X_train, Y_train):
             xTrain = X_train[trainIndex]
             xTest = X_train[testIndex]
             yTrain = Y_train[trainIndex]
             yTest = Y_train[testIndex]
-
+    
             print('For new fold')
 
             weights = np.zeros((len(labels),784))
             for k in labels:
-                print('Calculating weights for',k)
-                x_k_train, x_rest_train = xTrain[yTrain==k], xTrain[yTrain!=k]
-                x = np.vstack((x_k_train,x_rest_train))
+#                print('Calculating weights for',k)
                 y = 2*np.array(map(int, yTrain==k), dtype=int) - 1 
                 #all labels are -1 or 1
-                print x.shape,y.shape
-                weights[k,:] = getBinaryClassifierWeights(x,y,c)
-
-            testSVM(xTest, yTest, weights, labels)
-            break
-
-
+                weights[k,:] = getBinaryClassifierWeights(xTrain,y,c)
+            accuracy += testSVM(xTest, yTest, weights, labels)
+        print "Average Accuracy for all three folds:", accuracy/3.0
+        if accuracy/3.0 > bestAccuracy:
+            bestC = c
+            bestAccuracy = accuracy/3.0
+            
+    print 'Taking the best value of C:', bestC
+    
+    weights = np.zeros((len(labels), 784))
+    for k in labels:
+        y = 2*np.array(map(int, Y_train==k), dtype=int) - 1
+        weights[k, :] = getBinaryClassifierWeights(X_train, y, bestC)
+    accuracy = testSVM(X_test, Y_test, weights, labels)
+    print 'Final Test accuracy =',accuracy
+    
 if __name__ == "__main__":
     ## Here using one-vs-all algorithm predict the labels for X_test
     ## You just need to implement the logic of one-vs-all. For each binary classifiers use "getBinaryClassifierWeights" method.
@@ -118,4 +125,4 @@ if __name__ == "__main__":
     ## accuacy can be calculated by "accuracy_score(Y_test, predict_Y)"
 
     (X_train, Y_train, X_test, Y_test) =  getData()
-    one_vs_rest_classifier(X_train, Y_train)
+    one_vs_rest_classifier(X_train, Y_train, X_test, Y_test)

@@ -35,7 +35,7 @@ def read(dataset="training", path="."):
         yield get_img(i)
 
 
-def getData(dataType):
+def getNormData(dataType):
     x = []
     y = []
     for val in read(dataset=dataType):
@@ -127,13 +127,39 @@ def toLiblinear(data, label, fileName):
         fp.write('\n')
     fp.close()
 
+    
+def crossV(X_train, Y_train, X_test, Y_test):
+    
+    labels = np.unique(Y_train)
+    C_values = [0.01]#, 0.1, 1.0, 10]
+    bestAccuracy, bestC = 0.0, 0
+    for c in C_values:
+        print('For the c value of:', c)
+        accuracy = 0.0
+        for trainIndex, testIndex in StratifiedKFold(random_state=0).split(X_train, Y_train):
+            xTrain = X_train[trainIndex]
+            xTest = X_train[testIndex]
+            yTrain = Y_train[trainIndex]
+            yTest = Y_train[testIndex]
+    
+            print('For new fold')
+
+            weights = trainSVM(xTrain, yTrain, numEpoch=10)
+            accuracy += testSVM(xTest, yTest, weights, labels)
+        print "Average Accuracy for all three folds:", accuracy/3.0
+        if accuracy/3.0 > bestAccuracy:
+            bestC = c
+            bestAccuracy = accuracy/3.0
+            
+    print('Taking the best value of C:', bestC)
+    
+    weights = trainSVM(X_train, Y_train, C=bestC)
+    accuracy = testSVM(X_test, Y_test, weights, labels)
+    print('Final Test accuracy =',accuracy)
+    
+
 if __name__ == '__main__':
-    xTrain, yTrain = getData("training")
-    xTest, yTest = getData("testing")
-    #toLiblinear(xTrain,yTrain,'train.data')
-    #toLiblinear(xTest,yTest,'test.data')
-    #  =============================================================
-    # You need to change the code here to implmement cross-validation
-    #  =============================================================
-    weight = trainSVM(xTrain, yTrain, 1, 100)
-    testSVM(xTest, yTest, weight, np.unique(yTrain))
+
+    X_train, Y_train = getNormData("training")
+    X_test, Y_test = getNormData("testing")
+    crossV(X_train, Y_train, X_test, Y_test)
