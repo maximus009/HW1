@@ -2,6 +2,8 @@ import os
 import struct
 import numpy as np
 from scipy.sparse import rand
+from sklearn.model_selection import StratifiedKFold
+
 
 
 def read(dataset="training", path="."):
@@ -67,6 +69,7 @@ def computeObjectiveValue(weight, C, xTrain, yTrain):
     return total_part_1 + total_part_2
 
 
+"""
 def trainSVM(xTrain, yTrain, C=1, numEpoch=100):
     # xTrain, yTrain: data
     # numEpoch: number of iteration
@@ -94,10 +97,44 @@ def trainSVM(xTrain, yTrain, C=1, numEpoch=100):
             # You need to implement the update rules here
             #  =========================================
 
-    print('%d\t%f\t%f' % (epoch, ((loss / len(xTrain)) * 100), computeObjectiveValue(weight, C, xTrain, yTrain)))
+    print('%d\t%f\t%f' % (epoch, ((loss / len(xTrain)) * 100), computeObjectiveValue(weight, C, xTrain,
+
+"""
+
+def trainSVM(xTrain, yTrain, C=1, numEpoch=1, initialize='zero'):
+    # xTrain, yTrain: data
+    # numEpoch: number of iteration
+    learning_rate = 0.1
+    numberOfSamples, feature_size = xTrain.shape
+    numberOfSamples = float(numberOfSamples)
+    y_labels = np.unique(yTrain)
+    if initialize == 'zero':
+        weight = np.zeros((len(y_labels), feature_size))
+    elif initialize == 'random':
+        weight = np.random.randn(len(y_labels), feature_size)
+    for epoch in range(numEpoch):
+        loss = 0
+        for i in range(len(xTrain)):
+            predicted_y = -1
+            max_y_hat = -np.inf
+            for j in y_labels:
+                y_hat = weight[j].dot(xTrain[i])
+                if j != yTrain[i]:  # mismatch
+                    y_hat += 1
+                if max_y_hat < y_hat:
+                    max_y_hat = y_hat
+                    predicted_y = j
+            # loss can be used for debugging
+                weight[j] -= learning_rate*weight[j]/numberOfSamples
+            if predicted_y != yTrain[i]:
+                loss += 1
+                weight[predicted_y] -= learning_rate*C*xTrain[i]
+                weight[yTrain[i]] += learning_rate*C*xTrain[i]
+                
+        if (epoch+1)%5 == 0:
+            print('%d\t%f\t%f' % (epoch, ((loss / numberOfSamples) * 100), computeObjectiveValue(weight, C, xTrain, yTrain)))
 
     return weight
-
 
 def testSVM(xTest, yTest, weight, y_labels):
     feature_size = xTest.shape[1]
@@ -112,8 +149,9 @@ def testSVM(xTest, yTest, weight, y_labels):
                 predicted_y = y_labels[j]
         if predicted_y == yTest[i]:
             accurate += 1.0
-
-    print('Accuracy: ', (accurate / float(len(xTest))) * 100.0)
+    accuracy = 100 * accurate / float(len(xTest))
+    print('Accuracy: ', accuracy)
+    return accuracy
 
 
 def toLiblinear(data, label, fileName):
@@ -131,7 +169,7 @@ def toLiblinear(data, label, fileName):
 def crossV(X_train, Y_train, X_test, Y_test):
     
     labels = np.unique(Y_train)
-    C_values = [0.01]#, 0.1, 1.0, 10]
+    C_values = [0.01, 0.1, 1.0]
     bestAccuracy, bestC = 0.0, 0
     for c in C_values:
         print('For the c value of:', c)
@@ -144,16 +182,16 @@ def crossV(X_train, Y_train, X_test, Y_test):
     
             print('For new fold')
 
-            weights = trainSVM(xTrain, yTrain, numEpoch=10)
+            weights = trainSVM(xTrain, yTrain, numEpoch=20)
             accuracy += testSVM(xTest, yTest, weights, labels)
-        print "Average Accuracy for all three folds:", accuracy/3.0
+        print("Average Accuracy for all three folds:", accuracy/3.0)
         if accuracy/3.0 > bestAccuracy:
             bestC = c
             bestAccuracy = accuracy/3.0
             
     print('Taking the best value of C:', bestC)
     
-    weights = trainSVM(X_train, Y_train, C=bestC)
+    weights = trainSVM(X_train, Y_train, C=bestC, numEpoch=20)
     accuracy = testSVM(X_test, Y_test, weights, labels)
     print('Final Test accuracy =',accuracy)
     
